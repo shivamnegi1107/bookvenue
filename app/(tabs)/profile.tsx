@@ -87,7 +87,7 @@ export default function ProfileScreen() {
       <ScrollView>
       router.replace('/(tabs)/');
           <Text style={styles.headerTitle}>Profile</Text>
-        </View>
+        <View>
         
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
