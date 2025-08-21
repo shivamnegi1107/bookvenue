@@ -11,12 +11,12 @@ import ProfileAvatar from '@/components/ProfileAvatar';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [featuredVenues, setFeaturedVenues] = useState<Venue[]>([]);
   const [nearbyVenues, setNearbyVenues] = useState<Venue[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [venuesLoading, setVenuesLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -39,12 +39,23 @@ export default function HomeScreen() {
       } catch (error) {
         console.error('Error fetching venues:', error);
       } finally {
-        setLoading(false);
+        setVenuesLoading(false);
       }
     };
 
     fetchVenues();
   }, []);
+
+  // Show loading while auth is being checked
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -209,6 +220,21 @@ export default function HomeScreen() {
           ))}
         </View>
       </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
     </SafeAreaView>
   );
 }

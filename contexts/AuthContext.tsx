@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '@/api/authApi';
+import { router } from 'expo-router';
 
 export type User = {
   id: string;
@@ -73,6 +74,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Login context called with user data:', userData);
       setUser(userData);
+      
+      // Force a re-render by updating the loading state briefly
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+      }, 100);
     } catch (error) {
       console.error('Login context failed:', error);
       throw error;
@@ -99,6 +106,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authApi.logout();
       setUser(null);
+      
+      // Force navigation to home and refresh state
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+        router.replace('/(tabs)/');
+      }, 100);
       console.log('User logged out successfully');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -115,6 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Updating user profile:', data);
       const updatedUser = await authApi.updateProfile(data);
       setUser(updatedUser);
+      
+      // Force a re-render
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+      }, 100);
       console.log('Profile updated successfully');
     } catch (error) {
       console.error('Profile update failed:', error);

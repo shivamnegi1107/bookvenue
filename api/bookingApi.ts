@@ -2,6 +2,29 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Booking } from '@/types/booking';
 
+// Helper function to format time to HH:MM
+const formatTime = (timeString: string): string => {
+  if (!timeString) return '';
+  
+  // If already in HH:MM format, return as is
+  if (/^\d{2}:\d{2}$/.test(timeString)) {
+    return timeString;
+  }
+  
+  // If in HH:MM:SS format, extract HH:MM
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+    return timeString.substring(0, 5);
+  }
+  
+  // If it's just a number (hour), format it
+  const hour = parseInt(timeString);
+  if (!isNaN(hour)) {
+    return `${hour.toString().padStart(2, '0')}:00`;
+  }
+  
+  return timeString;
+};
+
 const API_URL = 'https://admin.bookvenue.app/api';
 
 const api = axios.create({
@@ -33,46 +56,71 @@ export const bookingApi = {
         return [];
       }
 
-      // Handle Laravel backend response structure
       const bookingsData = response.data.bookings || [];
 
       console.log('Processing bookings data:', bookingsData);
       
-      return bookingsData.map((booking: any, index: number) => {
-        // Handle Laravel backend data structure
+      return bookingsData.map((booking: any) => {
+        // Parse facility images
+        let facilityImages = [];
+        try {
+          if (booking.images) {
+            const parsedImages = JSON.parse(booking.images);
+            facilityImages = parsedImages.map((img: string) => 
+              `https://admin.bookvenue.app/${img.replace(/\\/g, '/')}`
+            );
+          }
+        } catch (e) {
+          console.warn('Failed to parse facility images:', e);
+        }
+        
+        // Add featured image if available
+        if (booking.facility_image) {
+          facilityImages.unshift(`https://admin.bookvenue.app/${booking.facility_image}`);
+        }
+        
+        // Fallback image if no images available
+        if (facilityImages.length === 0) {
+          facilityImages = ['https://images.pexels.com/photos/1263426/pexels-photo-1263426.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'];
+        }
+
         const facilityName = booking.facility || 'Unknown Venue';
         const courtName = booking.court || 'Court';
         const bookingDate = booking.date;
         const totalPrice = parseFloat(booking.price || '0');
         const bookingStatus = (booking.status || 'pending').toLowerCase();
 
-        // Handle time slots from Laravel backend
+        // Handle time slots - format them properly
         let startTime = '';
         let endTime = '';
-        let slotsCount = booking.slots ? booking.slots.length : 1;
+        let slotsCount = booking.slots && booking.slots.length > 0 ? booking.slots.length : 0;
 
         if (booking.slots && booking.slots.length > 0) {
-          const startTimes = booking.slots.map((slot: any) => slot.start_time || slot.startTime).filter(Boolean);
-          const endTimes = booking.slots.map((slot: any) => slot.end_time || slot.endTime).filter(Boolean);
-          startTime = startTimes.length > 0 ? startTimes[0] : '';
-          endTime = endTimes.length > 0 ? endTimes[endTimes.length - 1] : '';
+          const startTimes = booking.slots.map((slot: any) => {
+            const time = slot.start_time || slot.startTime;
+            return time ? formatTime(time) : null;
+          }).filter(Boolean);
+          const endTimes = booking.slots.map((slot: any) => {
+            const time = slot.end_time || slot.endTime;
+            return time ? formatTime(time) : null;
+          }).filter(Boolean);
+          
+          startTime = startTimes.length > 0 ? startTimes.join(', ') : '';
+          endTime = endTimes.length > 0 ? endTimes.join(', ') : '';
         }
 
-        // Default venue image
-        let venueImage = 'https://images.pexels.com/photos/1263426/pexels-photo-1263426.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
-
         const processedBooking = {
-          id: booking.bookingId?.toString() || index.toString(),
+          id: booking.bookingId?.toString() || Math.random().toString(),
           venue: {
-            id: 'venue-1',
+            id: booking.facility_slug || 'venue-1',
             name: facilityName,
-            location: 'Location not available',
+            location: booking.address || 'Location not available',
             type: courtName,
-            slug: 'venue-1',
-            images: [venueImage],
+            slug: booking.facility_slug || 'venue-1',
+            images: facilityImages,
             coordinates: {
-              latitude: 28.6139,
-              longitude: 77.2090
+              latitude: parseFloat(booking.lat || '28.6139'),
+              longitude: parseFloat(booking.lng || '77.2090')
             }
           },
           date: bookingDate,
@@ -80,7 +128,7 @@ export const bookingApi = {
           endTime: endTime,
           totalAmount: totalPrice,
           status: bookingStatus as 'pending' | 'confirmed' | 'cancelled',
-          slots: slotsCount,
+          slots: slotsCount
         };
 
         console.log('Processed booking:', processedBooking);
@@ -91,7 +139,6 @@ export const bookingApi = {
       console.error('Error response:', error.response?.data);
       throw new Error(error.response?.data?.message || 'Failed to fetch bookings');
     }
-  },
   
   getBookingById: async (id: string): Promise<Booking> => {
     try {

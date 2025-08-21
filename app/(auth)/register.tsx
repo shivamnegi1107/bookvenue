@@ -110,8 +110,13 @@ export default function RegisterScreen() {
       // Update auth context with user data
       login(userData);
       
-      // Navigate to home page
-      router.replace('/');
+      // Navigate to home page and force refresh
+      router.replace('/(tabs)/');
+      
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        router.replace('/(tabs)/');
+      }, 200);
     } catch (err: any) {
       console.error('Registration verification error:', err);
       setError(err.message || 'Registration failed');

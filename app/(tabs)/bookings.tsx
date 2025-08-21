@@ -61,14 +61,7 @@ export default function BookingsScreen() {
   };
 
   const formatTime = (timeString: string) => {
-    if (!timeString) return '';
-    
-    // Handle multiple time slots
-    if (timeString.includes(',')) {
-      const times = timeString.split(',').map(t => t.trim());
-      return `${times[0]} - ${times[times.length - 1]}`;
-    }
-    
+    // This function is no longer needed as formatting is done in the API
     return timeString;
   };
 
@@ -86,10 +79,19 @@ export default function BookingsScreen() {
   const currentBookings = activeTab === 'upcoming' ? upcomingBookings : pastBookings;
 
   const handleBookingPress = (booking: Booking) => {
-    router.push({
-      pathname: '/booking/[id]',
-      params: { id: booking.id }
-    });
+    // Navigate to venue detail page for rebooking
+    if (booking.venue.slug) {
+      router.push({
+        pathname: '/venue/[id]',
+        params: { id: booking.venue.slug }
+      });
+    } else {
+      // Fallback to booking details if no slug
+      router.push({
+        pathname: '/booking/[id]',
+        params: { id: booking.id }
+      });
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -247,8 +249,10 @@ export default function BookingsScreen() {
                     <View style={styles.detailItem}>
                       <Clock size={16} color="#2563EB" />
                       <Text style={styles.detailText}>
-                        {booking.startTime && booking.endTime 
-                          ? `${formatTime(booking.startTime)} - ${formatTime(booking.endTime)}`
+                        {booking.startTime && booking.endTime
+                          ? `${booking.startTime} - ${booking.endTime}`
+                          : booking.startTime
+                          ? booking.startTime
                           : 'Time not specified'
                         }
                       </Text>

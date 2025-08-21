@@ -18,4 +18,5 @@ export type Booking = {
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   slots?: number;
+  slots?: number;
 };
