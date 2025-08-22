@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar, MapPin, Clock, CreditCard, ArrowRight } from 'lucide-react-native';
+import { Calendar, MapPin, Clock, CreditCard, ArrowRight, User } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMyBookings } from '../../api/bookingApi';
+import { bookingApi } from '../../api/bookingApi';
 
 interface Booking {
   bookingId: number;
@@ -23,20 +23,22 @@ interface Booking {
 }
 
 export default function BookingsScreen() {
-  const { user, isLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       loadBookings();
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const loadBookings = async () => {
     try {
       setLoading(true);
-      const bookingsData = await getMyBookings();
+      console.log('Loading bookings for user:', user?.id);
+      const bookingsData = await bookingApi.getMyBookings();
+      console.log('Bookings loaded:', bookingsData);
       setBookings(bookingsData);
     } catch (error) {
       console.error('Error loading bookings:', error);
@@ -100,7 +102,7 @@ export default function BookingsScreen() {
   };
 
   const handleBookingPress = (booking: Booking) => {
-    // Navigate to venue detail page for rebooking
+    // Navigate to venue detail page for rebooking using facility_slug
     router.push(`/venue/${booking.facility_slug}`);
   };
 
@@ -108,11 +110,11 @@ export default function BookingsScreen() {
     router.push('/(auth)/login');
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color="#2563EB" />
         </View>
       </SafeAreaView>
     );
@@ -122,6 +124,7 @@ export default function BookingsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.authPromptContainer}>
+          <User size={64} color="#6B7280" />
           <Text style={styles.authPromptTitle}>Login Required</Text>
           <Text style={styles.authPromptText}>
             Please login to view your bookings and manage your reservations.
@@ -144,6 +147,7 @@ export default function BookingsScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {loading ? (
           <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2563EB" />
             <Text style={styles.loadingText}>Loading your bookings...</Text>
           </View>
         ) : bookings.length > 0 ? (
@@ -159,7 +163,7 @@ export default function BookingsScreen() {
                     source={{ 
                       uri: booking.facility_image.startsWith('http') 
                         ? booking.facility_image 
-                        : `https://api.example.com/${booking.facility_image}` 
+                        : `https://admin.bookvenue.app/${booking.facility_image}` 
                     }}
                     style={styles.venueImage}
                   />
@@ -170,8 +174,8 @@ export default function BookingsScreen() {
                     </View>
                     <View style={styles.locationContainer}>
                       <MapPin size={14} color="#6B7280" />
-                      <Text style={styles.locationText}>
-                        {booking.lat}, {booking.lng}
+                      <Text style={styles.locationText} numberOfLines={1}>
+                        Venue Location
                       </Text>
                     </View>
                   </View>
@@ -250,6 +254,8 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
+    marginTop: 12,
+    fontFamily: 'Inter-Medium',
   },
   authPromptContainer: {
     flex: 1,
@@ -259,20 +265,22 @@ const styles = StyleSheet.create({
   },
   authPromptTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
+    marginTop: 16,
     marginBottom: 12,
     textAlign: 'center',
   },
   authPromptText: {
     fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
   },
   loginButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#2563EB',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
@@ -280,7 +288,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   header: {
     backgroundColor: '#FFFFFF',
@@ -291,12 +299,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
   },
   bookingsContainer: {
@@ -329,7 +338,7 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
     marginBottom: 4,
   },
@@ -338,8 +347,8 @@ const styles = StyleSheet.create({
   },
   courtType: {
     fontSize: 14,
-    color: '#4F46E5',
-    fontWeight: '600',
+    color: '#2563EB',
+    fontFamily: 'Inter-SemiBold',
   },
   locationContainer: {
     flexDirection: 'row',
@@ -348,6 +357,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 12,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
   },
   statusContainer: {
@@ -361,7 +371,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     textTransform: 'capitalize',
   },
   bookingDetails: {
@@ -381,7 +391,7 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     color: '#374151',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   bookingFooter: {
     flexDirection: 'row',
@@ -392,12 +402,12 @@ const styles = StyleSheet.create({
   bookingId: {
     fontSize: 12,
     color: '#9CA3AF',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   rebookText: {
     fontSize: 12,
-    color: '#4F46E5',
-    fontWeight: '600',
+    color: '#2563EB',
+    fontFamily: 'Inter-SemiBold',
   },
   emptyState: {
     alignItems: 'center',
@@ -406,20 +416,21 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
   },
   exploreButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#2563EB',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -427,6 +438,6 @@ const styles = StyleSheet.create({
   exploreButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
 });

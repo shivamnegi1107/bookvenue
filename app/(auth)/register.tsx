@@ -107,16 +107,11 @@ export default function RegisterScreen() {
       const userData = await authApi.getProfile();
       console.log('Registration successful, user data:', userData);
       
-      // Update auth context with user data
-      login(userData);
+      // Update auth context with user data and wait for it to complete
+      await login(userData);
       
-      // Navigate to home page and force refresh
+      // Navigate to home page
       router.replace('/(tabs)/');
-      
-      // Small delay to ensure state is updated
-      setTimeout(() => {
-        router.replace('/(tabs)/');
-      }, 200);
     } catch (err: any) {
       console.error('Registration verification error:', err);
       setError(err.message || 'Registration failed');

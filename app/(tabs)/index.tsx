@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, MapPin, User, LogIn } from 'lucide-react-native';
+import { Search, MapPin, LogIn } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
-import { getVenues } from '../../api/venueApi';
+import { venueApi } from '../../api/venueApi';
 import VenueCard from '../../components/VenueCard';
 import type { Venue } from '../../types/venue';
 
 export default function HomeScreen() {
-  const { user, isLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingVenues, setLoadingVenues] = useState(true);
@@ -21,7 +21,9 @@ export default function HomeScreen() {
   const loadVenues = async () => {
     try {
       setLoadingVenues(true);
-      const venuesData = await getVenues();
+      console.log('Loading venues...');
+      const venuesData = await venueApi.getVenues();
+      console.log('Venues loaded:', venuesData.length);
       setVenues(venuesData);
     } catch (error) {
       console.error('Error loading venues:', error);
@@ -35,19 +37,15 @@ export default function HomeScreen() {
     venue.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleVenuePress = (venue: Venue) => {
-    router.push(`/venue/${venue.slug}`);
-  };
-
   const handleLoginPress = () => {
     router.push('/(auth)/login');
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color="#2563EB" />
         </View>
       </SafeAreaView>
     );
@@ -70,7 +68,7 @@ export default function HomeScreen() {
             </View>
             {!user && (
               <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-                <LogIn size={20} color="#4F46E5" />
+                <LogIn size={20} color="#2563EB" />
                 <Text style={styles.loginButtonText}>Login</Text>
               </TouchableOpacity>
             )}
@@ -115,6 +113,7 @@ export default function HomeScreen() {
           
           {loadingVenues ? (
             <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2563EB" />
               <Text style={styles.loadingText}>Loading venues...</Text>
             </View>
           ) : filteredVenues.length > 0 ? (
@@ -123,7 +122,7 @@ export default function HomeScreen() {
                 <VenueCard
                   key={venue.id}
                   venue={venue}
-                  onPress={() => handleVenuePress(venue)}
+                  size="small"
                 />
               ))}
             </View>
@@ -157,6 +156,8 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
+    marginTop: 12,
+    fontFamily: 'Inter-Medium',
   },
   header: {
     backgroundColor: '#FFFFFF',
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
     marginBottom: 4,
   },
@@ -183,6 +184,7 @@ const styles = StyleSheet.create({
   },
   location: {
     fontSize: 14,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
   },
   loginButton: {
@@ -195,8 +197,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   loginButtonText: {
-    color: '#4F46E5',
-    fontWeight: '600',
+    color: '#2563EB',
+    fontFamily: 'Inter-SemiBold',
     fontSize: 14,
   },
   searchContainer: {
@@ -220,6 +222,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#111827',
   },
   statsContainer: {
@@ -242,22 +245,23 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4F46E5',
+    fontFamily: 'Inter-Bold',
+    color: '#2563EB',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
     textAlign: 'center',
   },
   venuesSection: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 100, // Add padding for tab bar
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
     marginBottom: 16,
   },
@@ -270,6 +274,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
     textAlign: 'center',
   },
