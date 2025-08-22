@@ -1,161 +1,115 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authApi } from '@/api/authApi';
-import { router } from 'expo-router';
 
-export type User = {
+interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
-  address: string;
-  isVenueOwner: boolean;
-  createdAt: string;
-  updatedAt: string;
-  profileImage?: string;
-};
+}
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isLoading: boolean;
   login: (userData: User) => Promise<void>;
-  register: (name: string, email: string, password: string, isVenueOwner: boolean) => Promise<void>;
   logout: () => Promise<void>;
-  updateUserProfile: (data: Partial<User>) => Promise<void>;
-  refreshUser: () => Promise<void>;
-};
+  updateUser: (userData: Partial<User>) => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkLoggedIn = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        console.log('Checking logged-in status, token exists:', !!token);
-        
-        if (token) {
-          try {
-            const userData = await authApi.getProfile();
-            console.log('User profile loaded:', userData);
-            setUser(userData);
-          } catch (error) {
-            console.error('Failed to load profile with existing token:', error);
-            // Clear invalid token
-            await AsyncStorage.removeItem('token');
-            await AsyncStorage.removeItem('user');
-          }
-        }
-      } catch (error) {
-        console.error('Error checking logged-in status:', error);
-        // Clear invalid token
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkLoggedIn();
+    loadStoredUser();
   }, []);
 
-  const login = async (userData: User): Promise<void> => {
+  const loadStoredUser = async () => {
     try {
-      console.log('Login context called with user data:', userData);
+      setIsLoading(true);
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Error loading stored user:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async (userData: User) => {
+    try {
+      setIsLoading(true);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
-      // Force a re-render by updating the loading state briefly
-      setLoading(true);
+      // Force a brief loading state to ensure UI updates
       setTimeout(() => {
-        setLoading(false);
+        setIsLoading(false);
       }, 100);
     } catch (error) {
-      console.error('Login context failed:', error);
+      console.error('Error storing user data:', error);
+      setIsLoading(false);
       throw error;
     }
   };
 
-  const register = async (
-    name: string,
-    email: string,
-    password: string,
-    isVenueOwner: boolean
-  ): Promise<void> => {
+  const logout = async () => {
     try {
-      // This is handled in the register screen
-      const userData = await authApi.getProfile();
-      setUser(userData);
-    } catch (error) {
-      console.error('Registration context failed:', error);
-      throw error;
-    }
-  };
-
-  const logout = async (): Promise<void> => {
-    try {
-      await authApi.logout();
+      setIsLoading(true);
+      await AsyncStorage.removeItem('user');
       setUser(null);
       
-      // Force navigation to home and refresh state
-      setLoading(true);
+      // Force a brief loading state to ensure UI updates
       setTimeout(() => {
-        setLoading(false);
-        router.replace('/(tabs)/');
+        setIsLoading(false);
       }, 100);
-      console.log('User logged out successfully');
     } catch (error) {
-      console.error('Logout failed:', error);
-      // Clear user anyway
-      setUser(null);
+      console.error('Error removing user data:', error);
+      setIsLoading(false);
       throw error;
     }
   };
 
-  const updateUserProfile = async (data: FormData | Partial<User>): Promise<void> => {
-    if (!user) throw new Error('User not logged in');
-
+  const updateUser = async (userData: Partial<User>) => {
     try {
-      console.log('Updating user profile:', data);
-      const updatedUser = await authApi.updateProfile(data);
+      if (!user) return;
+      
+      const updatedUser = { ...user, ...userData };
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser);
-      
-      // Force a re-render
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-      }, 100);
-      console.log('Profile updated successfully');
     } catch (error) {
-      console.error('Profile update failed:', error);
+      console.error('Error updating user data:', error);
       throw error;
     }
   };
 
-  const refreshUser = async (): Promise<void> => {
-    try {
-      const userData = await authApi.getProfile();
-      setUser(userData);
-      console.log('User profile refreshed');
-    } catch (error) {
-      console.error('Failed to refresh user:', error);
-    }
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    login,
+    logout,
+    updateUser,
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateUserProfile, refreshUser }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
