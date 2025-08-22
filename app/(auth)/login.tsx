@@ -111,12 +111,13 @@ export default function LoginScreen() {
       // Update auth context with user data
       login(userData);
       
-      // Navigate to home page and force refresh
-      router.replace('/(tabs)/');
-      
-      // Small delay to ensure state is updated
+      // Force navigation with a small delay to ensure state updates
       setTimeout(() => {
-        router.replace('/(tabs)/');
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(tabs)');
+        }
       }, 200);
     } catch (err: any) {
       console.error('OTP verification error:', err);
