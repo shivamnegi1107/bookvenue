@@ -23,7 +23,7 @@ interface Booking {
 }
 
 export default function BookingsScreen() {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +31,7 @@ export default function BookingsScreen() {
     if (user) {
       loadBookings();
     }
+  }, [user]);
 
   const loadBookings = async () => {
     try {
@@ -108,6 +109,16 @@ export default function BookingsScreen() {
   const handleLoginPress = () => {
     router.push('/(auth)/login');
   };
+
+  if (authLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!user) {
     return (
