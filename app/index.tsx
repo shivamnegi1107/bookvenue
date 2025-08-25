@@ -6,7 +6,7 @@ import { Redirect } from 'expo-router';
 export default function IndexScreen() {
   const { user, loading } = useAuth();
 
-  // Show loading while checking auth state
+  // Show loading only during initial auth check
   if (loading) {
     return (
       <View style={styles.container}>
@@ -15,7 +15,7 @@ export default function IndexScreen() {
     );
   }
 
-  // Always redirect to home tab - users can browse without login
+  // Redirect to home tab - users can browse without login
   return <Redirect href="/(tabs)/" />;
 }
 

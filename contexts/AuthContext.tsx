@@ -71,7 +71,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (userData: User) => {
     try {
       console.log('Login called with user data:', userData);
-      setLoading(true);
       
       // Store user data
       await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -79,14 +78,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update state immediately
       setUser(userData);
       console.log('User state updated:', userData);
-      
-      // Force a brief loading state to ensure UI updates
-      setTimeout(() => {
-        setLoading(false);
-      }, 100);
     } catch (error) {
       console.error('Error storing user data:', error);
-      setLoading(false);
       throw error;
     }
   };
@@ -94,7 +87,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       console.log('Logout called');
-      setLoading(true);
       
       // Clear storage
       await AsyncStorage.removeItem('user');
@@ -103,14 +95,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear state
       setUser(null);
       console.log('User logged out');
-      
-      // Force a brief loading state to ensure UI updates
-      setTimeout(() => {
-        setLoading(false);
-      }, 100);
     } catch (error) {
       console.error('Error during logout:', error);
-      setLoading(false);
       throw error;
     }
   };

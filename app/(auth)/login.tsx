@@ -108,15 +108,17 @@ export default function LoginScreen() {
       const userData = await authApi.getProfile();
       console.log('Login successful, user data:', userData);
       
-      // Update auth context with user data and wait for it to complete
+      // Update auth context with user data
       await login(userData);
       
-      // Navigate immediately after login
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(tabs)/');
-      }
+      // Small delay to ensure state is updated, then navigate
+      setTimeout(() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(tabs)/');
+        }
+      }, 100);
     } catch (err: any) {
       console.error('OTP verification error:', err);
       setError(err.message || 'OTP verification failed');

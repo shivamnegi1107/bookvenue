@@ -9,7 +9,7 @@ import VenueCard from '../../components/VenueCard';
 import type { Venue } from '../../types/venue';
 
 export default function HomeScreen() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingVenues, setLoadingVenues] = useState(true);
@@ -40,16 +40,6 @@ export default function HomeScreen() {
   const handleLoginPress = () => {
     router.push('/(auth)/login');
   };
-
-  if (authLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
